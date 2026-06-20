@@ -10,7 +10,8 @@ RUN install-php-extensions \
     pgsql \
     intl \
     zip \
-    bcmath
+    bcmath \
+    pcntl
 
 # Node.jsバイナリのみを公式イメージから持ち込み、apt経由の古いバージョンを避ける
 COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
@@ -36,7 +37,7 @@ RUN composer dump-autoload --optimize --no-dev
 COPY package.json package-lock.json ./
 RUN npm ci && npm run build
 
-# --- Stage 2: runtime image (FrankenPHP classic mode) ---
+# --- Stage 2: runtime image (FrankenPHP worker mode) ---
 FROM dunglas/frankenphp:1-php8.5-bookworm
 
 RUN install-php-extensions \
@@ -44,7 +45,8 @@ RUN install-php-extensions \
     pgsql \
     intl \
     zip \
-    bcmath
+    bcmath \
+    pcntl
 
 WORKDIR /app
 
@@ -60,4 +62,3 @@ ENV SERVER_NAME=":8000"
 EXPOSE 8000
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["--config", "/etc/frankenphp/Caddyfile", "--adapter", "caddyfile"]
