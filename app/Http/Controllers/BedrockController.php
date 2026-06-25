@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DailyBedrockMessage;
 use App\Services\BedrockService;
 use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
@@ -14,15 +15,23 @@ class BedrockController extends Controller
 
     public function index(): Response
     {
-        return Inertia::render('Bedrock/Index');
+        return Inertia::render('Bedrock/Index', [
+            'dailyMessage' => DailyBedrockMessage::whereDate('date', today())
+                ->first(['date', 'response', 'updated_at']),
+        ]);
     }
 
     public function invoke(): JsonResponse
     {
         try {
-            $text = $this->bedrockService->invokeFixedPrompt();
+            $response = $this->bedrockService->invokeFixedPrompt();
 
-            return response()->json(['text' => $text]);
+            DailyBedrockMessage::updateOrCreate(
+                ['date' => today()],
+                ['response' => $response],
+            );
+
+            return response()->json(['text' => $response]);
         } catch (Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
